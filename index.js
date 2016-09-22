@@ -1,11 +1,14 @@
-var Service, Characteristic;
+
+var Service, Characteristic, HomebridgeAPI;
 var request = require("request");
 var pollingtoevent = require('polling-to-event');
-
+var moment = require('moment');
 	module.exports = function(homebridge){
 		Service = homebridge.hap.Service;
 		Characteristic = homebridge.hap.Characteristic;
+		HomebridgeAPI = homebridge;
 		homebridge.registerAccessory("homebridge-http", "Http", HttpAccessory);
+		
 	}
 
 
@@ -29,8 +32,12 @@ var pollingtoevent = require('polling-to-event');
 		this.name                   = config["name"];
 		this.brightnessHandling     = config["brightnessHandling"] 	 	|| "no";
 		this.switchHandling 		= config["switchHandling"] 		 	|| "no";
-		
-		//realtime polling info
+		//jaco
+		this.storage = require('node-persist');
+//Init storage
+  this.storage.initSync({
+    dir: HomebridgeAPI.user.persistPath()
+  });
 		this.state = false;
 		this.currentlevel = 0;
 		var that = this;
@@ -47,27 +54,32 @@ var pollingtoevent = require('polling-to-event');
 						done(null, body);
             		}
         		})
-			}, {longpolling:true,interval:300,longpollEventName:"statuspoll"});
+			}, {longpolling:true,interval:80000,longpollEventName:"statuspoll"});
 
 		statusemitter.on("statuspoll", function(data) {       
         	var binaryState = parseInt(data);
+			that.log(binaryState);
 	    	that.state = binaryState > 0;
-			that.log(that.service, "received power",that.status_url, "state is currently", binaryState); 
+			that.log(that.service, "received power",that.status_url, "state is currently", binaryState);
+		 
+			that.storage.setItem('http_' + this.name, Date.now());
 			// switch used to easily add additonal services
-			switch (that.service) {
-				case "Switch":
-					if (that.switchService ) {
-						that.switchService .getCharacteristic(Characteristic.On)
-						.setValue(that.state);
-					}
-					break;
-				case "Light":
-					if (that.lightbulbService) {
-						that.lightbulbService.getCharacteristic(Characteristic.On)
-						.setValue(that.state);
-					}		
-					break;			
-				}        
+			
+			
+		//	switch (that.service) {
+		//		case "Switch":
+		//			if (that.switchService ) {
+		//				that.switchService .getCharacteristic(Characteristic.On)
+		//				.setValue(that.state);
+		//			}
+		//			break;
+		//		case "Light":
+		//			if (that.lightbulbService) {
+		//				that.lightbulbService.getCharacteristic(Characteristic.On)
+		//				.setValue(that.state);
+		//			}		
+		//			break;			
+		//		}        
 		});
 
 	}
@@ -130,10 +142,19 @@ var pollingtoevent = require('polling-to-event');
 			url = this.on_url;
 			body = this.on_body;
 			this.log("Setting power state to on");
+			// update status 
+		this.storage.setItem('http_' + this.name,1);
+		this.storage.setItem('http_lastrefresh'+this.name, Date.now());			
+			
+			
 		} else {
 			url = this.off_url;
 			body = this.off_body;
 			this.log("Setting power state to off");
+			// update status
+		this.storage.setItem('http_' + this.name,0);
+		this.storage.setItem('http_lastrefresh'+this.name, Date.now());			
+			
 		}
 		
 		this.httpRequest(url, body, this.http_method, this.username, this.password, this.sendimmediately, function(error, response, responseBody) {
@@ -142,13 +163,31 @@ var pollingtoevent = require('polling-to-event');
 			callback(error);
 			} else {
 			this.log('HTTP set power function succeeded!');
+			
 			callback();
 			}
 		}.bind(this));
 	},
   
-  getPowerState: function(callback) {
-	if (!this.status_url) {
+getPowerState: function(callback) {
+
+var lastSeenUnix = this.storage.getItem('http_lastrefresh'+this.name);
+var lastSeenMoment = moment(lastSeenUnix);
+//var activeThreshold = moment().subtract(this.threshold, 'm');
+var activeThreshold = moment().subtract(5, 'm');
+var isActive = lastSeenMoment.isAfter(activeThreshold);
+if (isActive) 
+
+ {binaryState = parseInt(this.storage.getItem('http_' + this.name));
+		
+		this.log("Recently refreshed %s", binaryState)
+		powerOn = binaryState > 0;
+		callback(null, powerOn);}
+	
+else	
+{
+	this.log("lets scan");
+  if (!this.status_url) {
 		this.log.warn("Ignoring request; No status url defined.");
 		callback(new Error("No status url defined."));
 		return;
@@ -165,9 +204,26 @@ var pollingtoevent = require('polling-to-event');
 		var binaryState = parseInt(responseBody);
 		var powerOn = binaryState > 0;
 		this.log("Power state is currently %s", binaryState);
+		
+		if (isNaN(parseInt(responseBody))) {this.log("Exception Power state is currently %s", binaryState);
+		binaryState = parseInt(this.storage.getItem('http_' + this.name));
+		
+		this.log("Old Power state is currently %s", binaryState)
+		powerOn = binaryState > 0;
 		callback(null, powerOn);
+		
+	} else {
+		
+		
+		this.storage.setItem('http_' + this.name, parseInt(responseBody));
+		this.storage.setItem('http_lastrefresh'+this.name, Date.now());
+		callback(null, powerOn);
+		}
+		
 	}
 	}.bind(this));
+  }
+  
   },
 
 	getBrightness: function(callback) {
@@ -237,7 +293,12 @@ var pollingtoevent = require('polling-to-event');
 		case "Switch": 
 			this.switchService = new Service.Switch(this.name);
 			switch (this.switchHandling) {	
-				//Power Polling			
+				//Power Polling		
+				case "cached":
+					this.switchService
+					.getCharacteristic(Characteristic.On)	
+					.on('set', this.setPowerState.bind(this));					
+					break;
 				case "yes":					
 					this.switchService
 					.getCharacteristic(Characteristic.On)
@@ -260,6 +321,12 @@ var pollingtoevent = require('polling-to-event');
 			this.lightbulbService = new Service.Lightbulb(this.name);			
 			switch (this.switchHandling) {
 			//Power Polling
+			case "cache" :
+				this.lightbulbService
+				.getCharacteristic(Characteristic.On)
+				.on('get', this.getPowerState.bind(this))
+				.on('set', this.setPowerState.bind(this));
+				break;
 			case "yes" :
 				this.lightbulbService
 				.getCharacteristic(Characteristic.On)
