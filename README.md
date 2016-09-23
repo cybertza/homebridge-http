@@ -60,23 +60,14 @@ Configuration sample:
 What we expect for an HTTP Status request Here is how i render it
 
 ```
-    EthernetClient client = server.available();
-    client.println("HTTP/1.1 200 OK");
-    client.println("Content-Type: text/html");
-    client.println("Connnection: close");
-    client.println();
-    
-        switch (n)
-        {
-          
-          case 1: {client.println(myStatus.charAt(maxLEDs-1));         break;}
-          case 2: {client.println(myStatus.charAt(maxLEDs-2));         break;}
-          case 3: {client.println(myStatus.charAt(maxLEDs-3));         break;}
-          case 4: {client.println(myStatus.charAt(maxLEDs-4));         break;}
-          case 5: {client.println(myStatus.charAt(maxLEDs-5));         break;}
-          case 6: {client.println(myStatus.charAt(maxLEDs-6));         break;}
-          case 7: {client.println(myStatus.charAt(maxLEDs-7));         break;}
-          case 8: {client.println(myStatus.charAt(maxLEDs-8));         break;}
+EthernetClient client = server.available();
+client.println("HTTP/1.1 200 OK");
+client.println("Content-Type: text/html");
+client.println("Connnection: close");
+client.println();
+client.println(1)); // for on and 0 for off.
+delay(1)
+client.stop();
 ```          
    
 Opening a web browser for the url should return the status, and just the status. [[ this may change if i read the reg ex fork]]
