@@ -18,11 +18,15 @@ This module has recently been updated to support an additional method to read th
 Specify the `brightnesslvl_url` to return the current brightness level as an integer.
 
 Switch Handling and brightness Handling support 3 methods namely: 
-yes: 	(for polling on app load) is currently a cached hybrid it will look at the threshold in minutes and update the app accordingly
+
+`yes`: 	(for polling on app load) is currently a cached hybrid it will look at the threshold in minutes and update the app accordingly
 	this is to limit the time it takes for you to get multiple device, granted the first time you open the app after 5 minutes everything will request an update, after that it will serve the last result from disk.
-realtime: will poll continusley this may cause some issues with this version, but we will look at resolving this if the requerement is 	there. it will currently go to error if there is a socket error, or if the connection times out for the status. This error will 		terminate the software.
-no:	No polling, this is really the fasted way currently available. but has no status feedback.
-cached: This may be implimented as the current yes depending on the comunity feedback, and the yes restored.
+	
+`realtime`: will poll continusley this may cause some issues with this version, but we will look at resolving this if the requerement is 	there. it will currently go to error if there is a socket error, or if the connection times out for the status. This error will 		terminate the software.
+
+`no`:	No polling, this is really the fasted way currently available. but has no status feedback.
+
+`cached`: This may be implimented as the current yes depending on the comunity feedback, and the yes restored.
 
 
 Configuration sample:
