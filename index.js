@@ -34,6 +34,7 @@ var moment = require('moment');
 		this.switchHandling 		= config["switchHandling"] 		 	|| "no";
 		//jaco
 		this.storage = require('node-persist');
+		this.threshold = config["threshold"]              || 5 ;
 //Init storage
   this.storage.initSync({
     dir: HomebridgeAPI.user.persistPath()
@@ -172,8 +173,8 @@ var moment = require('moment');
 getPowerState: function(callback) {
 
 var lastSeenUnix = this.storage.getItem('http_lastrefresh'+this.name);
-var lastSeenMoment = moment(lastSeenUnix);
-//var activeThreshold = moment().subtract(this.threshold, 'm');
+//var lastSeenMoment = moment(lastSeenUnix);
+var activeThreshold = moment().subtract(this.threshold, 'm');
 var activeThreshold = moment().subtract(5, 'm');
 var isActive = lastSeenMoment.isAfter(activeThreshold);
 if (isActive) 
