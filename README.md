@@ -15,7 +15,7 @@ This module has recently been updated to support an additional method to read th
 Specify the `brightnesslvl_url` to return the current brightness level as an integer.
 
 Switch Handling and brightness Handling support 3 methods, yes for polling on app load, realtime for constant polling or no polling
-
+# update config eg to include 2 options
 Configuration sample:
 
  ```
@@ -39,6 +39,17 @@ Configuration sample:
     ]
 ```
 
+# http reply e.g.
+
+Status 200
+Doc type
+Integer
+
+#Arduino reply code e.g. 
+
+#  Learn from reg ex fork.
 #ToDo
 
 Complete documentation and review a number of  forks
+
+Write code nicely.
