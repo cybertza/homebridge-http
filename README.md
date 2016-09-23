@@ -75,11 +75,9 @@ What we expect for an HTTP Status request Here is how i render it
           case 8: {client.println(myStatus.charAt(maxLEDs-8));         break;}
 ```          
    
-the following will return an off status.
+Opening a web browser for the url should return the status, and just the status. [[ this may change if i read the reg ex fork]]
 ```   
-<html>
 0
-</html>
 ```
 
 It will not parse if there in no propper http 200 status, and it will return NaN if it is not 0 or 1 
