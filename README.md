@@ -47,9 +47,9 @@ Configuration sample:
 		"brightnesslvl_url":  "http://localhost/status/100054",
 		"sendimmediately": "",
 		"username" : "",
-		"password" : ""	
+		"password" : "",	
 		
-		"threshold" : "5"
+		"threshold" : 5
 		
 		
        } 
