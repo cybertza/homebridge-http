@@ -42,7 +42,7 @@ var pollingtoevent = require('polling-to-event');
 	        	that.httpRequest(powerurl, "", "GET", that.username, that.password, that.sendimmediately, function(error, response, body) {
             		if (error) {
                 		that.log('HTTP get power function failed: %s', error.message);
-		                callback(error);
+		            //    callback(error); this makes the realtime not crash on errors. not sure what the purpose of this call back was as there is nothin that should happen when this fails.
             		} else {               				    
 						done(null, body);
             		}
