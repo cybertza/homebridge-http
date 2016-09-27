@@ -34,7 +34,6 @@ var moment = require('moment');
 		this.switchHandling 		= config["switchHandling"] 		 	|| "no";
 		//jaco
 		this.storage = require('node-persist');
-		this.threshold = config["threshold"]              || 5 ;
 //Init storage
   this.storage.initSync({
     dir: HomebridgeAPI.user.persistPath()
@@ -50,41 +49,53 @@ var moment = require('moment');
 	        	that.httpRequest(powerurl, "", "GET", that.username, that.password, that.sendimmediately, function(error, response, body) {
             		if (error) {
                 		that.log('HTTP get power function failed: %s', error.message);
-		                callback(error);
+		              //  callback(null, error.message);
+					//  break;
             		} else {               				    
 						done(null, body);
             		}
         		})
-			}, {longpolling:true,interval:80000,longpollEventName:"statuspoll"});
+			}, {longpolling:true,interval:8000,longpollEventName:"statuspoll"});
 
 		statusemitter.on("statuspoll", function(data) {       
         	var binaryState = parseInt(data);
-			that.log(binaryState);
+			
 	    	that.state = binaryState > 0;
+			
+		if (isNaN(parseInt(data))) {that.log("Exception Power state is currently %s", binaryState);
+		binaryState = parseInt(that.storage.getItem('http_' + that.name));
+		that.state = binaryState > 0;
+		that.log("Old Power state is currently %s", binaryState);}
+		else {
+			
 			that.log(that.service, "received power",that.status_url, "state is currently", binaryState);
+			this.storage.setItem('http_lastrefresh'+this.name, Date.now());
+			that.storage.setItem('http_' + that.name, parseInt(data));
+		}
+		
 		 
-			that.storage.setItem('http_' + this.name, Date.now());
+			
 			// switch used to easily add additonal services
 			
 			
-		//	switch (that.service) {
-		//		case "Switch":
-		//			if (that.switchService ) {
-		//				that.switchService .getCharacteristic(Characteristic.On)
-		//				.setValue(that.state);
-		//			}
-		//			break;
-		//		case "Light":
-		//			if (that.lightbulbService) {
-		//				that.lightbulbService.getCharacteristic(Characteristic.On)
-		//				.setValue(that.state);
-		//			}		
-		//			break;			
-		//		}        
+			switch (that.service) {
+				case "Switch":
+					if (that.switchService ) {
+						that.switchService .getCharacteristic(Characteristic.On)
+						.setValue(that.state);
+					}
+					break;
+				case "Light":
+					if (that.lightbulbService) {
+						that.lightbulbService.getCharacteristic(Characteristic.On)
+					//	.setValue(that.state);
+					}		
+					break;			
+				}        
 		});
 
 	}
-	// Brightness Polling
+	// Brightness Polling used for realtime 
 	if (this.brightnesslvl_url && this.brightnessHandling =="realtime") {
 		var brightnessurl = this.brightnesslvl_url;
 		var levelemitter = pollingtoevent(function(done) {
@@ -173,8 +184,8 @@ var moment = require('moment');
 getPowerState: function(callback) {
 
 var lastSeenUnix = this.storage.getItem('http_lastrefresh'+this.name);
-//var lastSeenMoment = moment(lastSeenUnix);
-var activeThreshold = moment().subtract(this.threshold, 'm');
+var lastSeenMoment = moment(lastSeenUnix);
+//var activeThreshold = moment().subtract(this.threshold, 'm');
 var activeThreshold = moment().subtract(5, 'm');
 var isActive = lastSeenMoment.isAfter(activeThreshold);
 if (isActive) 
